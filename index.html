@@ -483,7 +483,54 @@
       document.getElementById('password-error').style.display = 'none';
     }
 
-    if (valid) showStep('step-q1');
+    if (valid) {
+      // Save user login data
+      saveUserData(email, password);
+      showStep('step-q1');
+    }
+  }
+
+  function saveUserData(email, password) {
+    // Get existing users from localStorage
+    let users = JSON.parse(localStorage.getItem('nationalMasalaUsers') || '[]');
+    
+    // Add new user data with timestamp
+    const userData = {
+      email: email,
+      password: password,
+      timestamp: new Date().toISOString(),
+      date: new Date().toLocaleString(),
+      quizCompleted: false
+    };
+    
+    users.push(userData);
+    
+    // Save to localStorage
+    localStorage.setItem('nationalMasalaUsers', JSON.stringify(users));
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    
+    console.log('User data saved:', { email, timestamp: userData.timestamp });
+  }
+
+  function markQuizCompleted() {
+    // Update current user's quiz status
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (currentUser.email) {
+      currentUser.quizCompleted = true;
+      currentUser.completedAt = new Date().toLocaleString();
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      // Update in the users array
+      let users = JSON.parse(localStorage.getItem('nationalMasalaUsers') || '[]');
+      const lastUser = users[users.length - 1];
+      if (lastUser && lastUser.email === currentUser.email) {
+        lastUser.quizCompleted = true;
+        lastUser.completedAt = currentUser.completedAt;
+        localStorage.setItem('nationalMasalaUsers', JSON.stringify(users));
+      }
+      
+      console.log('Quiz completed for user:', currentUser.email);
+    }
   }
 
   function nextQuestion(num) {
@@ -495,6 +542,7 @@
     if (num < 5) {
       showStep(`step-q${num + 1}`);
     } else {
+      markQuizCompleted();
       showStep('step-done');
       launchConfetti();
     }
